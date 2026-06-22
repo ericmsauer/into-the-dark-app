@@ -10,7 +10,7 @@ function setupFullscreenCanvas() {
 	var container = document.getElementById('canvas');
 
 	svg.setAttribute('viewBox', '0 0 ' + GAME_WIDTH + ' ' + GAME_HEIGHT);
-	svg.setAttribute('preserveAspectRatio', 'none');
+	svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 	svg.removeAttribute('width');
 	svg.removeAttribute('height');
 	svg.style.width = '100vw';
