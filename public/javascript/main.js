@@ -107,8 +107,8 @@ function Game(){
 		if(this.levely < this.game_tips.length)
 			this.game_tips[this.levely].show();
 		
-		//Draw Enviornment
-		for(var i = 0; i < this.collision_walls[this.levelx][this.levely].length; i++){
+		//Draw Enviornment (skip index 0 — outer border is collision-only)
+		for(var i = 1; i < this.collision_walls[this.levelx][this.levely].length; i++){
 			this.collision_walls[this.levelx][this.levely][i].show();
 		}
 
@@ -129,8 +129,8 @@ function Game(){
 			}
 		}
 
-		//Hide walls
-		for(var i = 0; i < this.collision_walls[this.levelx][this.levely].length; i++){
+		//Hide walls (skip index 0 — outer border stays hidden)
+		for(var i = 1; i < this.collision_walls[this.levelx][this.levely].length; i++){
 			this.collision_walls[this.levelx][this.levely][i].hide();
 		}
 
@@ -161,7 +161,7 @@ function Game(){
 	//Main menu draw functions
 	this.draw_init_mainmenu = function(){
 		mainmenu_background = paper.rect(0, 0, 640, 480);
-		mainmenu_background.attr({fill:"black",opacity:"1"});
+		mainmenu_background.attr({fill:"black", opacity:"1", stroke:"none"});
 
 		mainmenu_title = paper.text(320,200,"Into the Dark").scale(5,10);
 		mainmenu_title.attr({"font-family": "WC", fill:"white",opacity:"0"});
@@ -364,7 +364,7 @@ function Game(){
 			for(var j = 0; j < walls[i].length; j++){
 				path += "L" + walls[i][j].b.x + "," + walls[i][j].b.y;
 			}
-			collision_walls[i] = paper.path(path).hide();
+			collision_walls[i] = paper.path(path).attr({stroke: "none", fill: "none"}).hide();
 			if(i != 0)
 				collision_walls[i].attr({"stroke":"white","stroke-width":"3"});
 		}
