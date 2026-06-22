@@ -5,16 +5,41 @@ var key=[0,0,0,0,0,0,0]; // left, right, up, down
 var GAME_WIDTH = 640;
 var GAME_HEIGHT = 480;
 
+function setupFullscreenCanvas() {
+	var svg = paper.canvas;
+	var container = document.getElementById('canvas');
+
+	svg.setAttribute('viewBox', '0 0 ' + GAME_WIDTH + ' ' + GAME_HEIGHT);
+	svg.setAttribute('preserveAspectRatio', 'none');
+	svg.removeAttribute('width');
+	svg.removeAttribute('height');
+	svg.style.width = '100vw';
+	svg.style.height = '100vh';
+	svg.style.display = 'block';
+
+	container.style.position = 'fixed';
+	container.style.top = '0';
+	container.style.left = '0';
+	container.style.width = '100vw';
+	container.style.height = '100vh';
+	container.style.margin = '0';
+}
+
 function gameCoordsFromEvent(event) {
-	var rect = paper.canvas.getBoundingClientRect();
-	return {
-		x: (event.clientX - rect.left) * (GAME_WIDTH / rect.width),
-		y: (event.clientY - rect.top) * (GAME_HEIGHT / rect.height)
-	};
+	var svg = paper.canvas;
+	var pt = svg.createSVGPoint();
+	pt.x = event.clientX;
+	pt.y = event.clientY;
+	var ctm = svg.getScreenCTM();
+	if (!ctm)
+		return { x: 0, y: 0 };
+	var svgP = pt.matrixTransform(ctm.inverse());
+	return { x: svgP.x, y: svgP.y };
 }
 
 window.onload = function () {
 	paper = Raphael("canvas", GAME_WIDTH, GAME_HEIGHT);
+	setupFullscreenCanvas();
 	game = new Game();
 };
 
@@ -290,6 +315,11 @@ function Game(){
 		this.mainmenu_background = paper.rect(0, 0, 640, 480);
 		this.game_foreground = paper.rect(0, 0, 640, 480).attr({fill: "#000", opacity: "0"});
 		this.game_foreground.mousemove(function (event){
+			var coords = gameCoordsFromEvent(event);
+			game.mouse_x = coords.x;
+			game.mouse_y = coords.y;
+		});
+		document.getElementById('canvas').addEventListener('mousemove', function (event) {
 			var coords = gameCoordsFromEvent(event);
 			game.mouse_x = coords.x;
 			game.mouse_y = coords.y;
