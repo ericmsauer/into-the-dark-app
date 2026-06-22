@@ -34,8 +34,26 @@ function Game(){
 	this.mouse_x = 0;
 	this.mouse_y = 0;
 	this.mouse_click = 0;
-	
-	//Audio
+
+	//Audio — browsers block autoplay until a user gesture
+	this.sound_background = null;
+	this.music_started = false;
+	this.ensure_background_music = function() {
+		if (!this.sound_background) {
+			this.sound_background = new Audio("/sounds/background.mp3");
+			this.sound_background.loop = true;
+		}
+		if (this.music_started)
+			return;
+		var playPromise = this.sound_background.play();
+		if (playPromise !== undefined) {
+			var self = this;
+			playPromise.then(function() {
+				self.music_started = true;
+			}).catch(function() {});
+		}
+	};
+
 	var sound_shield_hit = new Audio("/sounds/shield_hit.wav");
 
 	//---------------------------------------Draw Functions--------------------------
@@ -165,13 +183,7 @@ function Game(){
 
 	//---------------------------------------Init Functions--------------------------
 	this.start_game = function(){
-		//Background music
-		this.sound_background = new Audio("/sounds/background.mp3");
-		this.sound_background.addEventListener('ended', function() {
-    		this.currentTime = 0;
-   			this.play();
-		}, false);
-		this.sound_background.play();
+		this.ensure_background_music();
 
 		//Set Level
 		this.levelx = 0;
@@ -230,7 +242,7 @@ function Game(){
 		this.collision_walls[1][3] = this.load_walls(level_1_3);
 
 		//Tips
-		this.game_tips[0] = paper.text(320,220,"W,A,S,D to move\n \nHold space to\nsprint\n \nShift to block\n \nRight click to attack").scale(2,2);
+		this.game_tips[0] = paper.text(320,220,"W,A,S,D to move\n \nHold space to\nsprint\n \nShift to block\n \nLeft click to attack").scale(2,2);
 		this.game_tips[0].attr({"font-family": "WC", fill:"white",opacity:"1"});
 		this.game_tips[1] = paper.text(320,200,"Find a sword and shield\n \nBut don't die,\nyou only have one life!").scale(2,2);
 		this.game_tips[1].attr({"font-family": "WC", fill:"white",opacity:"1"});
@@ -272,10 +284,18 @@ function Game(){
 			game.mouse_y = event.offsetY;
 		});
 		this.game_foreground.mousedown(function (event){
+			if (event.button !== 0)
+				return;
+			game.ensure_background_music();
 			game.mouse_click = 1;
 		});
 		this.game_foreground.mouseup(function (event){
+			if (event.button !== 0)
+				return;
 			game.mouse_click = 0;
+		});
+		document.addEventListener('keydown', function() {
+			game.ensure_background_music();
 		});
 		this.draw_init_mainmenu();
 		this.mainmenu_interval = setInterval(function() {
