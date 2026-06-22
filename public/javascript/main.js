@@ -847,17 +847,22 @@ function Player(){
 			return Math.atan2(a.p2.y - a.p1.y, a.p2.x - a.p1.x) - Math.atan2(b.p2.y - b.p1.y, b.p2.x - b.p1.x);
 			});
 
-		//Fill in sight polygons
-		var path = "M"
-		for(var i = 0; i < this.sight_line_intersects.length; i++){
-			path += this.sight_line_intersects[i].p2.x + "," + this.sight_line_intersects[i].p2.y + "L";
+		//Fill in sight polygon: black everywhere except what the player can see.
+		//Draw the visibility polygon, then the full play-area rect, and let the
+		//even-odd fill rule cut the polygon out as a transparent hole.
+		if(this.sight_line_intersects.length > 0){
+			var path = "M" + this.sight_line_intersects[0].p2.x + "," + this.sight_line_intersects[0].p2.y;
+			for(var i = 1; i < this.sight_line_intersects.length; i++){
+				path += "L" + this.sight_line_intersects[i].p2.x + "," + this.sight_line_intersects[i].p2.y;
+			}
+			path += "Z";
+			path += "M0,0L" + GAME_WIDTH + ",0L" + GAME_WIDTH + "," + GAME_HEIGHT + "L0," + GAME_HEIGHT + "Z";
+			this.sight_lines_poly.attr({path: path,
+										stroke: "none",
+										fill: "black",
+										opacity: "1"});
+			this.sight_lines_poly.node.setAttribute("fill-rule", "evenodd");
 		}
-		path += this.sight_line_intersects[0].p2.x + "," + this.sight_line_intersects[0].p2.y + "z";
-		path += "M0,0L0,480L640,480L640,0L0,0z";
-		this.sight_lines_poly.attr({path:path + this.sight_line_intersects[0].p2.x + "," + this.sight_line_intersects[0].p2.y,
-									stroke:"black",
-									fill:"black",
-									opacity:"1"});
 
 		//UI
 		this.sight_lines_poly.toFront();
