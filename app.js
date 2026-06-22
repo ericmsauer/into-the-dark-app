@@ -8,5 +8,6 @@ app.use(express.static(__dirname + '/public'))
 
 router.set_routes(app)
 
-app.listen(8888)
-console.log("Server running on http://localhost:8888");
+var port = process.env.PORT || 8888
+app.listen(port)
+console.log("Server running on http://localhost:" + port);

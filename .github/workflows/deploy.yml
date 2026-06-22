@@ -1,0 +1,78 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, maerica-dell1]
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Image name (lowercase)
+        id: image-meta
+        run: echo "image_base=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.image-meta.outputs.image_base }}:latest
+            ${{ steps.image-meta.outputs.image_base }}:${{ github.sha }}
+
+      - name: Fetch .env from Vaultwarden
+        env:
+          BW_PASSWORD: ${{ secrets.BW_PASSWORD }}
+          BW_ITEM_NAME: IntoTheDark-env
+        run: |
+          set -euo pipefail
+          if [ -z "${BW_PASSWORD:-}" ]; then
+            echo "::error::BW_PASSWORD org secret is missing"
+            exit 1
+          fi
+          if ! command -v bw >/dev/null 2>&1; then
+            curl -fsSL -o /tmp/bw.zip "https://vault.bitwarden.com/download/?app=cli&platform=linux"
+            unzip -o /tmp/bw.zip -d /usr/local/bin
+            chmod +x /usr/local/bin/bw
+          fi
+          command -v jq >/dev/null || sudo apt-get install -y jq
+          export BITWARDENCLI_APPDATA_DIR="${RUNNER_TEMP}/bw-data"
+          mkdir -p "$BITWARDENCLI_APPDATA_DIR"
+          bw config server https://vault.ma3rica.com
+          bw login ci-deploy@ma3rica.com --passwordenv BW_PASSWORD
+          export BW_SESSION
+          BW_SESSION="$(bw unlock --raw --passwordenv BW_PASSWORD)"
+          bw sync
+          bw get item "$BW_ITEM_NAME" --pretty \
+            | jq -r '.fields[]? | select(.name != null) | "\(.name)=\(.value)"' > .env
+          chmod 600 .env
+          bw logout || true
+
+      - name: docker compose pull + up
+        env:
+          COMPOSE_PROJECT_NAME: into-the-dark
+        run: |
+          set -euo pipefail
+          if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
+            echo "::error::Docker not available on this runner."
+            exit 1
+          fi
+          docker compose pull
+          docker compose up -d --remove-orphans
+          docker compose ps
+          docker image prune -af --filter "until=168h" || true
