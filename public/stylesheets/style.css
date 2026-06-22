@@ -1,24 +1,26 @@
-body {
+html, body {
 	background: rgb(0,0,0);
+	height: 100%;
 	margin: 0;
+	overflow: hidden;
 	padding: 0;
-	text-align: center;
-}
-h1 {
-	font-weight: 400;
-	height: 5%;
 }
 #canvas {
-	height: 480px;
-	margin: 0 auto;
+	height: 100vh;
+	margin: 0;
 	text-align: left;
-	width: 640px;
+	width: 100vw;
 	-webkit-user-select:none;
 	-khtml-user-select:none;
 	-moz-user-select:none;
 	-ms-user-select:none;
 	-o-user-select:none;
 	user-select:none;
+}
+#canvas svg {
+	display: block;
+	height: 100%;
+	width: 100%;
 }
 @font-face {
 	font-family: WC;

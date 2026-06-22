@@ -2,9 +2,19 @@
 var game; //This is the main object that contains and controls the game
 var paper;	//The canvas that Raphael draws on
 var key=[0,0,0,0,0,0,0]; // left, right, up, down
+var GAME_WIDTH = 640;
+var GAME_HEIGHT = 480;
+
+function gameCoordsFromEvent(event) {
+	var rect = paper.canvas.getBoundingClientRect();
+	return {
+		x: (event.clientX - rect.left) * (GAME_WIDTH / rect.width),
+		y: (event.clientY - rect.top) * (GAME_HEIGHT / rect.height)
+	};
+}
 
 window.onload = function () {
-	paper = Raphael("canvas", 640, 480);
+	paper = Raphael("canvas", GAME_WIDTH, GAME_HEIGHT);
 	game = new Game();
 };
 
@@ -125,7 +135,7 @@ function Game(){
 		mainmenu_background = paper.rect(0, 0, 640, 480);
 		mainmenu_background.attr({fill:"black",opacity:"1"});
 
-		mainmenu_title = paper.text(320,200,"Hidden in the Dark").scale(5,10);
+		mainmenu_title = paper.text(320,200,"Into the Dark").scale(5,10);
 		mainmenu_title.attr({"font-family": "WC", fill:"white",opacity:"0"});
 
 		//Add elements to game element Array
@@ -280,8 +290,9 @@ function Game(){
 		this.mainmenu_background = paper.rect(0, 0, 640, 480);
 		this.game_foreground = paper.rect(0, 0, 640, 480).attr({fill: "#000", opacity: "0"});
 		this.game_foreground.mousemove(function (event){
-			game.mouse_x = event.offsetX;
-			game.mouse_y = event.offsetY;
+			var coords = gameCoordsFromEvent(event);
+			game.mouse_x = coords.x;
+			game.mouse_y = coords.y;
 		});
 		this.game_foreground.mousedown(function (event){
 			if (event.button !== 0)
