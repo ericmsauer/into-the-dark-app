@@ -26,15 +26,18 @@ function setupFullscreenCanvas() {
 }
 
 function gameCoordsFromEvent(event) {
-	var svg = paper.canvas;
-	var pt = svg.createSVGPoint();
-	pt.x = event.clientX;
-	pt.y = event.clientY;
-	var ctm = svg.getScreenCTM();
-	if (!ctm)
+	// Map a screen point into game space, matching "xMidYMid meet":
+	// uniform scale to fit, centered, with letterbox bars on the long axis.
+	var rect = paper.canvas.getBoundingClientRect();
+	var scale = Math.min(rect.width / GAME_WIDTH, rect.height / GAME_HEIGHT);
+	if (!scale)
 		return { x: 0, y: 0 };
-	var svgP = pt.matrixTransform(ctm.inverse());
-	return { x: svgP.x, y: svgP.y };
+	var offsetX = (rect.width - GAME_WIDTH * scale) / 2;
+	var offsetY = (rect.height - GAME_HEIGHT * scale) / 2;
+	return {
+		x: (event.clientX - rect.left - offsetX) / scale,
+		y: (event.clientY - rect.top - offsetY) / scale
+	};
 }
 
 window.onload = function () {
