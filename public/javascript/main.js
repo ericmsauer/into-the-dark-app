@@ -5,6 +5,13 @@ var key=[0,0,0,0,0,0,0]; // left, right, up, down
 var GAME_WIDTH = 640;
 var GAME_HEIGHT = 480;
 
+function isOuterBoundarySegment(seg) {
+	return (seg.a.x === 0 && seg.b.x === 0) ||
+		(seg.a.x === GAME_WIDTH && seg.b.x === GAME_WIDTH) ||
+		(seg.a.y === 0 && seg.b.y === 0) ||
+		(seg.a.y === GAME_HEIGHT && seg.b.y === GAME_HEIGHT);
+}
+
 function setupFullscreenCanvas() {
 	var svg = paper.canvas;
 	var container = document.getElementById('canvas');
@@ -66,6 +73,7 @@ function Game(){
 	this.collision_units = new Array();
 	this.walls;
 	this.collision_walls;
+	this.visual_walls;
 	this.triggers;
 	
 	//Mouse Attributes
@@ -107,10 +115,8 @@ function Game(){
 		if(this.levely < this.game_tips.length)
 			this.game_tips[this.levely].show();
 		
-		//Draw Enviornment (skip index 0 — outer border is collision-only)
-		for(var i = 1; i < this.collision_walls[this.levelx][this.levely].length; i++){
-			this.collision_walls[this.levelx][this.levely][i].show();
-		}
+		//Draw interior walls (outer-edge segments are collision-only)
+		this.show_visual_walls();
 
 		//Setup and Draw Units
 		for(var i = 0; i < this.units[this.levelx][this.levely].length; i++){
@@ -129,10 +135,7 @@ function Game(){
 			}
 		}
 
-		//Hide walls (skip index 0 — outer border stays hidden)
-		for(var i = 1; i < this.collision_walls[this.levelx][this.levely].length; i++){
-			this.collision_walls[this.levelx][this.levely][i].hide();
-		}
+		this.hide_visual_walls();
 
 		//Hide tips
 		if(this.levely < this.game_tips.length)
@@ -260,9 +263,11 @@ function Game(){
 		//Walls
 		this.walls = new Array();
 		this.collision_walls = new Array();
+		this.visual_walls = new Array();
 		for(var y = 0; y < y_levels; y++){
 			this.walls[y] = new Array();
 			this.collision_walls[y] = new Array();
+			this.visual_walls[y] = new Array();
 		}
 		this.walls[0][0] = level_0_0;
 		this.walls[0][1] = level_0_1;
@@ -271,13 +276,28 @@ function Game(){
 		this.walls[0][4] = level_0_4;
 		this.walls[0][5] = level_0_5;
 		this.walls[1][3] = level_1_3;
-		this.collision_walls[0][0] = this.load_walls(level_0_0);
-		this.collision_walls[0][1] = this.load_walls(level_0_1);
-		this.collision_walls[0][2] = this.load_walls(level_0_2);
-		this.collision_walls[0][3] = this.load_walls(level_0_3);
-		this.collision_walls[0][4] = this.load_walls(level_0_4);
-		this.collision_walls[0][5] = this.load_walls(level_0_5);
-		this.collision_walls[1][3] = this.load_walls(level_1_3);
+		var loaded;
+		loaded = this.load_walls(level_0_0);
+		this.collision_walls[0][0] = loaded.collision;
+		this.visual_walls[0][0] = loaded.visual;
+		loaded = this.load_walls(level_0_1);
+		this.collision_walls[0][1] = loaded.collision;
+		this.visual_walls[0][1] = loaded.visual;
+		loaded = this.load_walls(level_0_2);
+		this.collision_walls[0][2] = loaded.collision;
+		this.visual_walls[0][2] = loaded.visual;
+		loaded = this.load_walls(level_0_3);
+		this.collision_walls[0][3] = loaded.collision;
+		this.visual_walls[0][3] = loaded.visual;
+		loaded = this.load_walls(level_0_4);
+		this.collision_walls[0][4] = loaded.collision;
+		this.visual_walls[0][4] = loaded.visual;
+		loaded = this.load_walls(level_0_5);
+		this.collision_walls[0][5] = loaded.collision;
+		this.visual_walls[0][5] = loaded.visual;
+		loaded = this.load_walls(level_1_3);
+		this.collision_walls[1][3] = loaded.collision;
+		this.visual_walls[1][3] = loaded.visual;
 
 		//Tips
 		this.game_tips[0] = paper.text(320,220,"W,A,S,D to move\n \nHold space to\nsprint\n \nShift to block\n \nLeft click to attack").scale(2,2);
@@ -357,18 +377,46 @@ function Game(){
 	//---------------------------------------Game Functions--------------------------
 	//Function to load walls easily
 	this.load_walls = function(walls){
-		collision_walls = new Array();
-		//Load Walls
+		var collision = new Array();
+		var visual = new Array();
 		for(var i = 0; i < walls.length; i++){
 			var path = "M" + walls[i][0].a.x + "," + walls[i][0].a.y;
 			for(var j = 0; j < walls[i].length; j++){
 				path += "L" + walls[i][j].b.x + "," + walls[i][j].b.y;
 			}
-			collision_walls[i] = paper.path(path).attr({stroke: "none", fill: "none"}).hide();
-			if(i != 0)
-				collision_walls[i].attr({"stroke":"white","stroke-width":"3"});
+			collision[i] = paper.path(path).attr({stroke: "none", fill: "none"}).hide();
+
+			visual[i] = new Array();
+			if(i !== 0) {
+				for(var j = 0; j < walls[i].length; j++){
+					if(isOuterBoundarySegment(walls[i][j]))
+						continue;
+					var segPath = "M" + walls[i][j].a.x + "," + walls[i][j].a.y +
+						"L" + walls[i][j].b.x + "," + walls[i][j].b.y;
+					visual[i].push(paper.path(segPath).attr({
+						stroke: "white",
+						"stroke-width": "3"
+					}).hide());
+				}
+			}
 		}
-		return collision_walls;
+		return {collision: collision, visual: visual};
+	}
+
+	this.show_visual_walls = function(){
+		var groups = this.visual_walls[this.levelx][this.levely];
+		for(var i = 1; i < groups.length; i++){
+			for(var j = 0; j < groups[i].length; j++)
+				groups[i][j].show();
+		}
+	}
+
+	this.hide_visual_walls = function(){
+		var groups = this.visual_walls[this.levelx][this.levely];
+		for(var i = 1; i < groups.length; i++){
+			for(var j = 0; j < groups[i].length; j++)
+				groups[i][j].hide();
+		}
 	}
 
 	//Function to load walls easily
