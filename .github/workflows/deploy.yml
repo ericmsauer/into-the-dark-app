@@ -38,7 +38,7 @@ jobs:
       - name: Fetch .env from Vaultwarden
         env:
           BW_PASSWORD: ${{ secrets.BW_PASSWORD }}
-          BW_ITEM_NAME: IntoTheDark-env
+          BW_ITEM_NAME: into-the-dark-app-env
         run: |
           set -euo pipefail
           if [ -z "${BW_PASSWORD:-}" ]; then

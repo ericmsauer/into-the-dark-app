@@ -1,6 +1,6 @@
 services:
   into-the-dark:
-    image: ghcr.io/maerica-server/intothedark:latest
+    image: ghcr.io/maerica-server/into-the-dark-app:latest
     container_name: into-the-dark
     restart: unless-stopped
     env_file:
